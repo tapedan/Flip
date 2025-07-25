@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Daniel Game</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/confetti-js/0.0.2/confetti.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Bungee&display=swap" rel="stylesheet" />
+    <style>
+        @keyframes neon {
+            0%, 100% {
+                text-shadow: 0 0 10px #12379c, 0 0 20px #0d94ac, 0 0 30px #2f00ff, 0 0 40px #0bcc24;
+            }
+            50% {
+                text-shadow: 0 0 10px #12379c, 0 0 20px #0d94ac, 0 0 30px #2f00ff, 0 0 40px #0bcc24;
+            }
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            50% {
+                transform: scale(1.05);
+                opacity: 0.8;
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        @keyframes rainbow {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* VIBRAÇÃO HORIZONTAL NO NOME DO VENCEDOR */
+        @keyframes vibrate-horizontal {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            50% { transform: translateX(5px); }
+            75% { transform: translateX(-5px); }
+            100% { transform: translateX(0); }
+        }
+
+        .neon-text {
+            animation: neon 1.5s ease-in-out infinite alternate;
+            font-family: 'Bungee', cursive;
+        }
+
+        .player-card {
+            transition: all 0.3s ease;
+            animation: pulse 2s infinite;
+        }
+
+        .player-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .rainbow-bg {
+            background: linear-gradient(45deg, #2600ff, #00ff9d, #1bff13, #00ff00, #8fff0e, #caff37, #ff8b1f);
+            background-size: 400% 400%;
+            animation: rainbow 10s ease infinite;
+        }
+
+        .confetti-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1000;
+        }
+
+        .flip-card {
+            perspective: 1000px;
+        }
+
+        .flip-card-inner {
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+        }
+
+        .flip-card:hover .flip-card-inner {
+            transform: rotateY(180deg);
+        }
+
+        .flip-card-front, .flip-card-back {
+            backface-visibility: hidden;
+        }
+
+        .flip-card-back {
+            transform: rotateY(180deg);
+        }
+
+        .just-dance-font {
+            font-family: 'Bungee', cursive;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        /* CLASSE PARA VIBRAR O NOME DO VENCEDOR */
+        .vibrate-horizontal {
+            animation: vibrate-horizontal 0.2s infinite;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+    <div id="confetti-container" class="confetti-canvas"></div>
+    
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header with logo -->
+        <header class="text-center mb-12">
+            <div class="flip-card inline-block">
+                <div class="flip-card-inner">
+                    <div class="flip-card-front">
+                        <h1 class="text-6xl md:text-8xl neon-text just-dance-font mb-4">Daniel Game</h1>
+                </div>
+        </header>
+        
+        <!-- Game controls -->
+        <div class="max-w-4xl mx-auto bg-gray-800 rounded-xl shadow-2xl p-6 mb-10 border-2 border-purple-500">
+            <div id="setup-phase" class="text-center">
+                <h2 class="text-3xl font-bold mb-6 text-purple-300 just-dance-font">ADICIONAR JOGADORES</h2>
+                <div class="flex flex-col md:flex-row justify-center items-center gap-4 mb-6">
+                    <input type="text" id="player-name" placeholder="Nome do jogador" class="px-4 py-2 rounded-lg bg-gray-700 text-white focus:outline-none focus:ring-2 focus:ring-purple-500 w-full md:w-64" />
+                    <button id="add-player" class="px-6 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg font-bold transition-all transform hover:scale-105">
+                        ADICIONAR
+                    </button>
+                    <button id="start-game" class="px-6 py-2 bg-green-600 hover:bg-green-700 rounded-lg font-bold transition-all transform hover:scale-105 hidden">
+                        COMEÇAR JOGO
+                    </button>
+                </div>
+                <p id="player-count" class="text-gray-400">Jogadores adicionados: 0/12 (mínimo 2)</p>
+            </div>
+            
+            <div id="game-phase" class="hidden text-center">
+                <h2 class="text-3xl font-bold mb-6 text-purple-300 just-dance-font">RODADA <span id="round-number">1</span></h2>
+                <div id="score-inputs" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8"></div>
+                <button id="next-round" class="px-8 py-3 bg-green-600 hover:bg-green-700 rounded-lg font-bold text-xl transition-all transform hover:scale-105">
+                    PRÓXIMA RODADA
+                </button>
+            </div>
+            
+            <div id="winner-phase" class="hidden text-center">
+                <h2 id="winner-name" class="text-5xl font-bold mb-6 text-yellow-300 just-dance-font neon-text"></h2>
+                <p class="text-2xl mb-8">VENCEU O JOGO COM <span id="winner-score" class="text-yellow-300 font-bold">200</span> PONTOS!</p>
+                <button id="new-game" class="px-8 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg font-bold text-xl transition-all transform hover:scale-105">
+                    NOVO JOGO
+                </button>
+            </div>
+        </div>
+        
+        <!-- Ranking display -->
+        <div class="max-w-4xl mx-auto">
+            <h2 class="text-3xl font-bold mb-6 text-center text-purple-300 just-dance-font">RANKING</h2>
+            <div id="ranking-list" class="space-y-4">
+                <!-- Players will be added here -->
+                <div class="text-center py-10">
+                    <p class="text-gray-500">Adicione jogadores para começar</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Game state
+            const state = {
+                players: [],
+                currentRound: 1,
+                maxPlayers: 12,
+                gameStarted: false,
+                winner: null
+            };
+            
+            // DOM elements
+            const setupPhase = document.getElementById('setup-phase');
+            const gamePhase = document.getElementById('game-phase');
+            const winnerPhase = document.getElementById('winner-phase');
+            const playerNameInput = document.getElementById('player-name');
+            const addPlayerBtn = document.getElementById('add-player');
+            const playerCount = document.getElementById('player-count');
+            const scoreInputs = document.getElementById('score-inputs');
+            const nextRoundBtn = document.getElementById('next-round');
+            const roundNumber = document.getElementById('round-number');
+            const rankingList = document.getElementById('ranking-list');
+            const winnerName = document.getElementById('winner-name');
+            const winnerScore = document.getElementById('winner-score');
+            const newGameBtn = document.getElementById('new-game');
+            const confettiContainer = document.getElementById('confetti-container');
+            
+            let confetti = null;
+            
+            // DOM elements
+            const startGameBtn = document.getElementById('start-game');
+            
+            // Add player
+            addPlayerBtn.addEventListener('click', function() {
+                const name = playerNameInput.value.trim();
+                
+                if (name === '') {
+                    alert('Por favor, insira um nome para o jogador');
+                    return;
+                }
+                
+                if (state.players.length >= state.maxPlayers) {
+                    alert(`Máximo de ${state.maxPlayers} jogadores atingido`);
+                    return;
+                }
+                
+                // Add player to state
+                state.players.push({
+                    name: name,
+                    score: 0,
+                    rounds: []
+                });
+                
+                // Update UI
+                playerNameInput.value = '';
+                updatePlayerCount();
+                renderRanking();
+            });
+            
+            // Start game button
+            startGameBtn.addEventListener('click', function() {
+                if (state.players.length < 2) {
+                    alert(`É necessário pelo menos 2 jogadores para começar. Adicione mais ${2 - state.players.length} jogador(es)`);
+                    return;
+                }
+                startGame();
+            });
+            
+            // Start game when pressing enter on player name input
+            playerNameInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    addPlayerBtn.click();
+                }
+            });
+            
+            // Next round button
+            nextRoundBtn.addEventListener('click', function() {
+                // Collect scores
+                const scoreElements = document.querySelectorAll('.player-score-input');
+                let allZero = true;
+                
+                scoreElements.forEach((input, index) => {
+                    const score = parseInt(input.value) || 0;
+                    state.players[index].score += score;
+                    state.players[index].rounds.push(score);
+                    
+                    if (score > 0) {
+                        allZero = false;
+                    }
+                });
+                
+                if (allZero) {
+                    alert('Pelo menos um jogador deve marcar pontos nesta rodada!');
+                    return;
+                }
+                
+                // Check for winner
+                const winner = state.players.find(player => player.score >= 200);
+                
+                if (winner) {
+                    state.winner = winner;
+                    showWinner();
+                    return;
+                }
+                
+                // Next round
+                state.currentRound++;
+                roundNumber.textContent = state.currentRound;
+                renderScoreInputs();
+                renderRanking();
+            });
+            
+            // New game button
+            newGameBtn.addEventListener('click', function() {
+                resetGame();
+            });
+            
+            // Update player count display
+            function updatePlayerCount() {
+                playerCount.textContent = `Jogadores adicionados: ${state.players.length}/${state.maxPlayers}`;
+                
+                // Show start game button when we have at least 2 players
+                if (state.players.length >= 2 && !state.gameStarted) {
+                    startGameBtn.classList.remove('hidden');
+                } else {
+                    startGameBtn.classList.add('hidden');
+                }
+            }
+            
+            // Start the game
+            function startGame() {
+                state.gameStarted = true;
+                setupPhase.classList.add('hidden');
+                gamePhase.classList.remove('hidden');
+                renderScoreInputs();
+            }
+            
+            // Show winner
+            function showWinner() {
+                gamePhase.classList.add('hidden');
+                winnerPhase.classList.remove('hidden');
+                
+                winnerName.textContent = state.winner.name;
+                winnerScore.textContent = state.winner.score;
+
+                // Adiciona vibração horizontal no nome do vencedor
+                winnerName.classList.add('vibrate-horizontal');
+                
+                // Confetti effect
+                const confettiSettings = {
+                    target: 'confetti-container',
+                    max: 150,
+                    size: 1.5,
+                    animate: true,
+                    props: ['circle', 'square', 'triangle', 'line'],
+                    colors: [
+                        [255, 0, 255],
+                        [0, 255, 255],
+                        [255, 255, 0],
+                        [255, 0, 0],
+                        [0, 255, 0],
+                        [0, 0, 255]
+                    ],
+                    clock: 25,
+                    rotate: true,
+                    start_from_edge: true,
+                    respawn: true
+                };
+                
+                if(confetti) confetti.clear();
+                confetti = new ConfettiGenerator(confettiSettings);
+                confetti.render();
+
+                // Play victory sound (4 segundos)
+                playSound('win');
+            }
+            
+            // Reset game
+            function resetGame() {
+                // Clear confetti
+                if (confetti) {
+                    confetti.clear();
+                    confetti = null;
+                }
+                
+                // Remove vibration
+                winnerName.classList.remove('vibrate-horizontal');
+                
+                // Reset state
+                state.players = [];
+                state.currentRound = 1;
+                state.gameStarted = false;
+                state.winner = null;
+                
+                // Reset UI
+                setupPhase.classList.remove('hidden');
+                gamePhase.classList.add('hidden');
+                winnerPhase.classList.add('hidden');
+                playerNameInput.value = '';
+                updatePlayerCount();
+                renderRanking();
+                roundNumber.textContent = '1';
+            }
+            
+            // Render score inputs for current round
+            function renderScoreInputs() {
+                scoreInputs.innerHTML = '';
+                
+                state.players.forEach((player, index) => {
+                    const playerScoreDiv = document.createElement('div');
+                    playerScoreDiv.className = 'bg-gray-700 rounded-lg p-4 border border-purple-900 player-card';
+                    
+                    playerScoreDiv.innerHTML = `
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <h3 class="text-xl font-bold text-purple-300">${player.name}</h3>
+                                <p class="text-gray-400">Total: <span class="text-white font-bold">${player.score}</span></p>
+                            </div>
+                            <input type="number" class="player-score-input w-20 px-3 py-2 bg-gray-800 rounded-lg text-center text-white focus:outline-none focus:ring-2 focus:ring-purple-500" min="0" value="0" />
+                        </div>
+                    `;
+                    
+                    scoreInputs.appendChild(playerScoreDiv);
+                });
+            }
+            
+            // Render ranking
+            function renderRanking() {
+                if (state.players.length === 0) {
+                    rankingList.innerHTML = `
+                        <div class="text-center py-10">
+                            <p class="text-gray-500">Adicione jogadores para começar</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                // Sort players by score (descending)
+                const sortedPlayers = [...state.players].sort((a, b) => b.score - a.score);
+                
+                rankingList.innerHTML = '';
+                
+                sortedPlayers.forEach((player, index) => {
+                    const positionClass = index === 0 ? 'bg-gradient-to-r from-yellow-600 to-yellow-800' : 
+                                      index === 1 ? 'bg-gradient-to-r from-gray-500 to-gray-700' : 
+                                      index === 2 ? 'bg-gradient-to-r from-amber-700 to-amber-900' : 'bg-gray-800';
+                    
+                    const trophyIcon = index === 0 ? '🥇' : 
+                                    index === 1 ? '🥈' : 
+                                    index === 2 ? '🥉' : (index + 1) + '.';
+                    
+                    const playerDiv = document.createElement('div');
+                    playerDiv.className = `${positionClass} rounded-lg p-4 flex justify-between items-center border border-gray-700 player-card`;
+                    
+                    playerDiv.innerHTML = `
+                        <div class="flex items-center">
+                            <span class="text-2xl mr-4">${trophyIcon}</span>
+                            <div>
+                                <h3 class="text-xl font-bold ${index < 3 ? 'text-white' : 'text-purple-300'}">${player.name}</h3>
+                                <div class="flex gap-2 text-sm">
+                                    <span class="text-gray-300">Rodadas Jogadas: ${player.rounds.length}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-2xl font-bold ${index < 3 ? 'text-yellow-300' : 'text-white'}">${player.score}</p>
+                            ${player.score >= 200? '<p class="text-xs text-green-400">VENCEDOR!</p>' : ''}
+                        </div>
+                    `;
+                    
+                    rankingList.appendChild(playerDiv);
+                });
+            }
+            
+            // Exemplo: adicionar efeitos sonoros nos botões principais
+            document.getElementById('add-player').addEventListener('click', () => playSound('click'));
+            document.getElementById('start-game').addEventListener('click', () => playSound('correct'));
+            document.getElementById('next-round').addEventListener('click', () => playSound('click'));
+            document.getElementById('new-game').addEventListener('click', () => playSound('efeitos/entrada.ogg'));
+
+            // Sons do jogo
+            function playSound(type) {
+                const sounds = {
+                    click: 'efeitos/entrada.mp3',
+                    correct: 'efeitos/entrada.mp3',
+                    wrong: 'efeitos/entrada.mp3',
+                    win: 'efeitos/entrada.ogg',
+                    bg: 'efeitos/entrada.mp3'
+                };
+
+                if (sounds[type]) {
+                    const audio = new Audio(sounds[type]);
+                    if (type === 'bg') audio.loop = true;
+                    audio.play().catch(e => console.warn(`Erro ao tocar som: ${type}`, e));
+                }
+            }
+        });
+    </script>
+</body>
+</html>
